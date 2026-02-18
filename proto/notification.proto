@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package notification;
+
+option go_package = "grpcon/proto";
+
+// NotificationService handles connection management and notification streaming
+service NotificationService {
+  // AddConnection registers a new connection to receive notifications
+  rpc AddConnection(ConnectionRequest) returns (ConnectionResponse);
+  
+  // RemoveConnection unregisters a connection
+  rpc RemoveConnection(ConnectionRequest) returns (ConnectionResponse);
+  
+  // StreamNotifications is a server-side streaming RPC to push notifications to clients
+  rpc StreamNotifications(SubscribeRequest) returns (stream Notification);
+}
+
+// ConnectionRequest contains connection details
+message ConnectionRequest {
+  string connection_id = 1;
+  string service_name = 2;
+}
+
+// ConnectionResponse confirms the connection operation
+message ConnectionResponse {
+  bool success = 1;
+  string message = 2;
+  string connection_id = 3;
+}
+
+// SubscribeRequest to subscribe for notifications
+message SubscribeRequest {
+  string connection_id = 1;
+}
+
+// Notification message structure
+message Notification {
+  string id = 1;
+  string connection_id = 2;
+  string title = 3;
+  string message = 4;
+  string service_name = 5;
+  int64 timestamp = 6;
+}
