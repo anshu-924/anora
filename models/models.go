@@ -18,7 +18,7 @@ type Connection struct {
 	ConnectedAt        time.Time
 	LastNotificationAt time.Time
 	NotificationCount  int
-	IsActive           bool
+	IsActive           bool 
 }
 
 // GetUptime returns how long the connection has been active
@@ -145,6 +145,22 @@ func (cm *ConnectionManager) GetConnection(clientID string, deviceID string) (*C
 	}
 
 	return clientGroup.GetDevice(deviceID)
+}
+
+// GetConnectionByUniqueID retrieves a connection using its unique ID (client_id_device_id)
+func (cm *ConnectionManager) GetConnectionByUniqueID(uniqueID string) (*Connection, bool) {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	// Iterate through all clients and their devices to find matching unique ID
+	for _, clientGroup := range cm.clients {
+		for _, device := range clientGroup.Devices {
+			if device.UniqueID == uniqueID {
+				return device, true
+			}
+		}
+	}
+	return nil, false
 }
 
 // GetClientGroup retrieves all devices for a specific client

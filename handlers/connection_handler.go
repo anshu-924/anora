@@ -46,7 +46,7 @@ func (h *ConnectionHandler) RegisterDevice(clientID, deviceID, serviceName strin
 		ServiceName:       serviceName,
 		ConnectedAt:       time.Now(),
 		NotificationCount: 0,
-		IsActive:          true,
+		IsActive:          false, //will be set to true when stream is attached
 	}
 
 	h.connManager.AddConnection(conn)
@@ -64,6 +64,20 @@ func (h *ConnectionHandler) UnregisterDevice(clientID, deviceID string) error {
 	}
 
 	uniqueID := models.CreateUniqueID(clientID, deviceID)
+	 // Get connection before removing to check stream status
+    conn, exists := h.connManager.GetConnection(clientID, deviceID)
+    if !exists {
+        return fmt.Errorf("device not found: %s", uniqueID)
+    }
+    
+    // If stream is attached and active, close it gracefully
+    if conn.Stream != nil && conn.IsActive {
+        log.Printf("Closing active stream for device: %s", uniqueID)
+        // The stream will be closed when we return from StreamNotifications
+        // Mark as inactive first
+        conn.IsActive = false
+        conn.Stream = nil
+    }
 	removed := h.connManager.RemoveConnection(uniqueID, clientID, deviceID)
 
 	if !removed {
@@ -117,6 +131,15 @@ func (h *ConnectionHandler) GetDeviceInfo(clientID, deviceID string) (*models.Co
 	return conn, nil
 }
 
+// GetDeviceByUniqueID retrieves a device by its unique ID
+func (h *ConnectionHandler) GetDeviceByUniqueID(uniqueID string) (*models.Connection, error) {
+	conn, exists := h.connManager.GetConnectionByUniqueID(uniqueID)
+	if !exists {
+		return nil, fmt.Errorf("device not found: %s", uniqueID)
+	}
+	return conn, nil
+}
+
 // GetConnectionStats returns statistics about connections
 func (h *ConnectionHandler) GetConnectionStats() map[string]interface{} {
 	stats := h.connManager.GetStats()
@@ -132,10 +155,13 @@ func (h *ConnectionHandler) SendNotificationToClient(notification *models.Notifi
 	}
 
 	devices := clientGroup.GetAllDevices()
+	// log.Printf("Sending notification to client %s with %d devices", notification.ClientID, len(devices))
+	// log.Printf(" devices: %v", devices)
 	successCount := 0
 	failCount := 0
 
 	for _, device := range devices {
+		// log.Printf(" single device data: %v", device)
 		if device.Stream != nil && device.IsActive {
 			// Send notification
 			if err := device.Stream.Send(notification.ToProto(device.UniqueID)); err != nil {

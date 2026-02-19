@@ -99,32 +99,27 @@ func (s *NotificationServer) StreamNotifications(req *pb.SubscribeRequest, strea
 		return fmt.Errorf("connection_id is required")
 	}
 
-	// Parse connection_id to get client_id and device_id
-	// For now using simple split logic - improve based on your ID format
-	clientID := connectionID
-	deviceID := "default_device"
-
-	// Check if connection exists
-	conn, err := s.connHandler.GetDeviceInfo(clientID, deviceID)
+	// Look up connection by unique ID (format: client_id_device_id)
+	conn, err := s.connHandler.GetDeviceByUniqueID(connectionID)
 	if err != nil {
 		return fmt.Errorf("connection not found: %s", connectionID)
 	}
 
 	// Attach stream to the connection
-	if err := s.connHandler.AttachStream(clientID, deviceID, stream); err != nil {
+	if err := s.connHandler.AttachStream(conn.ClientID, conn.DeviceID, stream); err != nil {
 		return err
 	}
 
-	log.Printf("Client %s (Device: %s) started streaming notifications", clientID, deviceID)
+	log.Printf("Client %s (Device: %s) started streaming notifications", conn.ClientID, conn.DeviceID)
 
 	// Keep the stream alive
 	<-stream.Context().Done()
 
 	// Detach stream when client disconnects
-	s.connHandler.DetachStream(clientID, deviceID)
+	s.connHandler.DetachStream(conn.ClientID, conn.DeviceID)
 
 	log.Printf("Client %s (Device: %s) disconnected from stream (Uptime: %v)",
-		clientID, deviceID, conn.GetUptime())
+		conn.ClientID, conn.DeviceID, conn.GetUptime())
 
 	return nil
 }
