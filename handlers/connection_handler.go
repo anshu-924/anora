@@ -282,8 +282,9 @@ func (h *ConnectionHandler) BroadcastToAll(notification *models.NotificationData
 				notif := &models.NotificationData{
 					ID:          notification.ID,
 					ClientID:    device.ClientID,
-					Title:       notification.Title,
-					Message:     notification.Message,
+					CreatedAt:   notification.CreatedAt,
+					UpdatedAt:   notification.UpdatedAt,
+					CallID:      notification.CallID,
 					ServiceName: notification.ServiceName,
 					Timestamp:   notification.Timestamp,
 				}

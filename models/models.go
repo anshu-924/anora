@@ -237,8 +237,9 @@ func (cm *ConnectionManager) GetStats() map[string]interface{} {
 type NotificationData struct {
 	ID          string
 	ClientID    string // Target client (all their devices will receive)
-	Title       string
-	Message     string
+	CreatedAt   string
+	UpdatedAt   string
+	CallID      string
 	ServiceName string
 	Timestamp   int64
 }
@@ -248,8 +249,10 @@ func (n *NotificationData) ToProto(connectionID string) *pb.Notification {
 	return &pb.Notification{
 		Id:           n.ID,
 		ConnectionId: connectionID,
-		Title:        n.Title,
-		Message:      n.Message,
+		CreatedAt:    n.CreatedAt,
+		UpdatedAt:    n.UpdatedAt,
+		ClientId:     n.ClientID,
+		CallId:       n.CallID,
 		ServiceName:  n.ServiceName,
 		Timestamp:    n.Timestamp,
 	}

@@ -182,8 +182,10 @@ func (s *NotificationServer) sendHeartbeats(conn *models.Connection, stream pb.N
 			heartbeat := &pb.Notification{
 				Id:           fmt.Sprintf("heartbeat_%d", time.Now().Unix()),
 				ConnectionId: conn.UniqueID,
-				Title:        "heartbeat",
-				Message:      "ping",
+				CreatedAt:    time.Now().Format(time.RFC3339),
+				UpdatedAt:    time.Now().Format(time.RFC3339),
+				ClientId:     conn.ClientID,
+				CallId:       "heartbeat",
 				ServiceName:  "system",
 				Timestamp:    time.Now().Unix(),
 				Type:         "heartbeat",

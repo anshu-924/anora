@@ -73,9 +73,10 @@ func setupHTTPGateway(server *services.Server, port string) {
 		}
 
 		var req struct {
-			ClientID string `json:"client_id"`
-			Title    string `json:"title"`
-			Message  string `json:"message"`
+			ClientID  string `json:"client_id"`
+			CreatedAt string `json:"created_at"`
+			UpdatedAt string `json:"updated_at"`
+			CallID    string `json:"call_id"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -87,14 +88,15 @@ func setupHTTPGateway(server *services.Server, port string) {
 		notification := &models.NotificationData{
 			ID:          fmt.Sprintf("notif_%d", time.Now().Unix()),
 			ClientID:    req.ClientID,
-			Title:       req.Title,
-			Message:     req.Message,
+			CreatedAt:   req.CreatedAt,
+			UpdatedAt:   req.UpdatedAt,
+			CallID:      req.CallID,
 			ServiceName: "http_gateway",
 			Timestamp:   time.Now().Unix(),
 		}
 		//change here to send to all devices of the client instead of only first device
 		// err := notifServer.SendNotificationToClient(notification)
-		err:=notifServer.GetConnectionHandler().SendToFirstDevice(notification)
+		err := notifServer.GetConnectionHandler().SendToFirstDevice(notification)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})

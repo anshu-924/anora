@@ -185,11 +185,13 @@ type Notification struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	ConnectionId  string                 `protobuf:"bytes,2,opt,name=connection_id,json=connectionId,proto3" json:"connection_id,omitempty"`
-	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
-	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
-	ServiceName   string                 `protobuf:"bytes,5,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
-	Timestamp     int64                  `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Type          string                 `protobuf:"bytes,7,opt,name=type,proto3" json:"type,omitempty"` // "notification" or "heartbeat"
+	CreatedAt     string                 `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	ClientId      string                 `protobuf:"bytes,5,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	CallId        string                 `protobuf:"bytes,6,opt,name=call_id,json=callId,proto3" json:"call_id,omitempty"`
+	ServiceName   string                 `protobuf:"bytes,7,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	Timestamp     int64                  `protobuf:"varint,8,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Type          string                 `protobuf:"bytes,9,opt,name=type,proto3" json:"type,omitempty"` // "notification" or "heartbeat"
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -238,16 +240,30 @@ func (x *Notification) GetConnectionId() string {
 	return ""
 }
 
-func (x *Notification) GetTitle() string {
+func (x *Notification) GetCreatedAt() string {
 	if x != nil {
-		return x.Title
+		return x.CreatedAt
 	}
 	return ""
 }
 
-func (x *Notification) GetMessage() string {
+func (x *Notification) GetUpdatedAt() string {
 	if x != nil {
-		return x.Message
+		return x.UpdatedAt
+	}
+	return ""
+}
+
+func (x *Notification) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *Notification) GetCallId() string {
+	if x != nil {
+		return x.CallId
 	}
 	return ""
 }
@@ -286,15 +302,19 @@ const file_proto_notification_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12#\n" +
 	"\rconnection_id\x18\x03 \x01(\tR\fconnectionId\"7\n" +
 	"\x10SubscribeRequest\x12#\n" +
-	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\"\xc8\x01\n" +
+	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\"\x8c\x02\n" +
 	"\fNotification\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12#\n" +
-	"\rconnection_id\x18\x02 \x01(\tR\fconnectionId\x12\x14\n" +
-	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
-	"\amessage\x18\x04 \x01(\tR\amessage\x12!\n" +
-	"\fservice_name\x18\x05 \x01(\tR\vserviceName\x12\x1c\n" +
-	"\ttimestamp\x18\x06 \x01(\x03R\ttimestamp\x12\x12\n" +
-	"\x04type\x18\a \x01(\tR\x04type2\x95\x02\n" +
+	"\rconnection_id\x18\x02 \x01(\tR\fconnectionId\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x03 \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\x04 \x01(\tR\tupdatedAt\x12\x1b\n" +
+	"\tclient_id\x18\x05 \x01(\tR\bclientId\x12\x17\n" +
+	"\acall_id\x18\x06 \x01(\tR\x06callId\x12!\n" +
+	"\fservice_name\x18\a \x01(\tR\vserviceName\x12\x1c\n" +
+	"\ttimestamp\x18\b \x01(\x03R\ttimestamp\x12\x12\n" +
+	"\x04type\x18\t \x01(\tR\x04type2\x95\x02\n" +
 	"\x13NotificationService\x12R\n" +
 	"\rAddConnection\x12\x1f.notification.ConnectionRequest\x1a .notification.ConnectionResponse\x12U\n" +
 	"\x10RemoveConnection\x12\x1f.notification.ConnectionRequest\x1a .notification.ConnectionResponse\x12S\n" +

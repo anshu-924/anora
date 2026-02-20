@@ -38,9 +38,11 @@ message SubscribeRequest {
 message Notification {
   string id = 1;
   string connection_id = 2;
-  string title = 3;
-  string message = 4;
-  string service_name = 5;
-  int64 timestamp = 6;
-  string type = 7; // "notification" or "heartbeat"
+  string created_at = 3;
+  string updated_at = 4;
+  string client_id = 5;
+  string call_id = 6;
+  string service_name = 7;
+  int64 timestamp = 8;
+  string type = 9; // "notification" or "heartbeat"
 }
