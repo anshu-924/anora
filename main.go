@@ -32,6 +32,12 @@ func main() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
+	// Start health check monitor for stale connections
+	notifServer := server.GetNotificationServer()
+	connHandler := notifServer.GetConnectionHandler()
+	connHandler.StartHealthCheckMonitor()
+	log.Println("Health check monitor started successfully")
+
 	// Start HTTP gateway using the SAME notification server
 	go func() {
 		log.Printf("Starting HTTP gateway on %s", httpPort)

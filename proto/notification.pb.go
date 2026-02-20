@@ -189,6 +189,7 @@ type Notification struct {
 	Message       string                 `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
 	ServiceName   string                 `protobuf:"bytes,5,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	Timestamp     int64                  `protobuf:"varint,6,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Type          string                 `protobuf:"bytes,7,opt,name=type,proto3" json:"type,omitempty"` // "notification" or "heartbeat"
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -265,6 +266,13 @@ func (x *Notification) GetTimestamp() int64 {
 	return 0
 }
 
+func (x *Notification) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
 var File_proto_notification_proto protoreflect.FileDescriptor
 
 const file_proto_notification_proto_rawDesc = "" +
@@ -278,14 +286,15 @@ const file_proto_notification_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12#\n" +
 	"\rconnection_id\x18\x03 \x01(\tR\fconnectionId\"7\n" +
 	"\x10SubscribeRequest\x12#\n" +
-	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\"\xb4\x01\n" +
+	"\rconnection_id\x18\x01 \x01(\tR\fconnectionId\"\xc8\x01\n" +
 	"\fNotification\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12#\n" +
 	"\rconnection_id\x18\x02 \x01(\tR\fconnectionId\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\x12\x18\n" +
 	"\amessage\x18\x04 \x01(\tR\amessage\x12!\n" +
 	"\fservice_name\x18\x05 \x01(\tR\vserviceName\x12\x1c\n" +
-	"\ttimestamp\x18\x06 \x01(\x03R\ttimestamp2\x95\x02\n" +
+	"\ttimestamp\x18\x06 \x01(\x03R\ttimestamp\x12\x12\n" +
+	"\x04type\x18\a \x01(\tR\x04type2\x95\x02\n" +
 	"\x13NotificationService\x12R\n" +
 	"\rAddConnection\x12\x1f.notification.ConnectionRequest\x1a .notification.ConnectionResponse\x12U\n" +
 	"\x10RemoveConnection\x12\x1f.notification.ConnectionRequest\x1a .notification.ConnectionResponse\x12S\n" +

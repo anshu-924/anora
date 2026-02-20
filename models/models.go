@@ -17,8 +17,11 @@ type Connection struct {
 	Stream             pb.NotificationService_StreamNotificationsServer
 	ConnectedAt        time.Time
 	LastNotificationAt time.Time
+	LastHeartbeatAt    time.Time // Last heartbeat sent
 	NotificationCount  int
-	IsActive           bool 
+	IsActive           bool
+	HeartbeatFailCount int       // Track consecutive heartbeat failures
+	HeartbeatStopChan  chan bool // Channel to stop heartbeat goroutine
 }
 
 // GetUptime returns how long the connection has been active

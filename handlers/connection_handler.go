@@ -64,20 +64,28 @@ func (h *ConnectionHandler) UnregisterDevice(clientID, deviceID string) error {
 	}
 
 	uniqueID := models.CreateUniqueID(clientID, deviceID)
-	 // Get connection before removing to check stream status
-    conn, exists := h.connManager.GetConnection(clientID, deviceID)
-    if !exists {
-        return fmt.Errorf("device not found: %s", uniqueID)
-    }
-    
-    // If stream is attached and active, close it gracefully
-    if conn.Stream != nil && conn.IsActive {
-        log.Printf("Closing active stream for device: %s", uniqueID)
-        // The stream will be closed when we return from StreamNotifications
-        // Mark as inactive first
-        conn.IsActive = false
-        conn.Stream = nil
-    }
+	// Get connection before removing to check stream status
+	conn, exists := h.connManager.GetConnection(clientID, deviceID)
+	if !exists {
+		return fmt.Errorf("device not found: %s", uniqueID)
+	}
+
+	// If stream is attached and active, close it gracefully
+	if conn.Stream != nil && conn.IsActive {
+		log.Printf("Closing active stream for device: %s", uniqueID)
+		// Stop the heartbeat goroutine if it's running
+		if conn.HeartbeatStopChan != nil {
+			select {
+			case conn.HeartbeatStopChan <- true:
+				log.Printf("Heartbeat goroutine stopped for device: %s", uniqueID)
+			default:
+				// Channel might be closed or not ready, that's okay
+			}
+		}
+		// Mark as inactive first
+		conn.IsActive = false
+		conn.Stream = nil
+	}
 	removed := h.connManager.RemoveConnection(uniqueID, clientID, deviceID)
 
 	if !removed {
@@ -233,4 +241,34 @@ func (h *ConnectionHandler) BroadcastToAll(notification *models.NotificationData
 // GetConnectionManager returns the underlying connection manager
 func (h *ConnectionHandler) GetConnectionManager() *models.ConnectionManager {
 	return h.connManager
+}
+
+// StartHealthCheckMonitor runs a background goroutine that checks for stale connections
+func (h *ConnectionHandler) StartHealthCheckMonitor() {
+	go func() {
+		ticker := time.NewTicker(60 * time.Second) // Check every minute
+		defer ticker.Stop()
+
+		log.Println("Health check monitor started")
+		for range ticker.C {
+			h.cleanupStaleConnections()
+		}
+	}()
+}
+
+// cleanupStaleConnections removes connections that haven't received heartbeat in 90 seconds
+func (h *ConnectionHandler) cleanupStaleConnections() {
+	allConns := h.connManager.GetAllConnections()
+	staleThreshold := 90 * time.Second
+
+	for _, conn := range allConns {
+		if conn.IsActive {
+			timeSinceHeartbeat := time.Since(conn.LastHeartbeatAt)
+			if timeSinceHeartbeat > staleThreshold {
+				log.Printf("Removing stale connection: %s (last heartbeat: %v ago)",
+					conn.UniqueID, timeSinceHeartbeat)
+				h.UnregisterDevice(conn.ClientID, conn.DeviceID)
+			}
+		}
+	}
 }

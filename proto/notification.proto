@@ -42,4 +42,5 @@ message Notification {
   string message = 4;
   string service_name = 5;
   int64 timestamp = 6;
+  string type = 7; // "notification" or "heartbeat"
 }

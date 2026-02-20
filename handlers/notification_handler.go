@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"grpcon/models"
 	pb "grpcon/proto"
@@ -110,10 +111,30 @@ func (s *NotificationServer) StreamNotifications(req *pb.SubscribeRequest, strea
 		return err
 	}
 
+	// Initialize heartbeat timestamp
+	conn.LastHeartbeatAt = time.Now()
+	conn.HeartbeatFailCount = 0
+
+	// Create heartbeat stop channel and store it in connection
+	conn.HeartbeatStopChan = make(chan bool, 1)
+
 	log.Printf("Client %s (Device: %s) started streaming notifications", conn.ClientID, conn.DeviceID)
+
+	// Start heartbeat goroutine
+	go s.sendHeartbeats(conn, stream, conn.HeartbeatStopChan)
 
 	// Keep the stream alive
 	<-stream.Context().Done()
+
+	// Stop heartbeat goroutine
+	if conn.HeartbeatStopChan != nil {
+		select {
+		case conn.HeartbeatStopChan <- true:
+			log.Printf("Signaled heartbeat stop for %s", conn.UniqueID)
+		default:
+			// Channel might already be stopped
+		}
+	}
 
 	// Detach stream when client disconnects
 	s.connHandler.DetachStream(conn.ClientID, conn.DeviceID)
@@ -142,4 +163,53 @@ func (s *NotificationServer) GetConnectionHandler() *ConnectionHandler {
 // GetConnectionStats returns connection statistics
 func (s *NotificationServer) GetConnectionStats() map[string]interface{} {
 	return s.connHandler.GetConnectionStats()
+}
+
+// sendHeartbeats sends periodic heartbeat messages to the client
+func (s *NotificationServer) sendHeartbeats(conn *models.Connection, stream pb.NotificationService_StreamNotificationsServer, done chan bool) {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Check if connection is still active before sending
+			if !conn.IsActive || conn.Stream == nil {
+				log.Printf("Connection %s is no longer active, stopping heartbeat", conn.UniqueID)
+				return
+			}
+
+			heartbeat := &pb.Notification{
+				Id:           fmt.Sprintf("heartbeat_%d", time.Now().Unix()),
+				ConnectionId: conn.UniqueID,
+				Title:        "heartbeat",
+				Message:      "ping",
+				ServiceName:  "system",
+				Timestamp:    time.Now().Unix(),
+				Type:         "heartbeat",
+			}
+
+			if err := stream.Send(heartbeat); err != nil {
+				conn.HeartbeatFailCount++
+				log.Printf("Failed to send heartbeat to %s (fail count: %d): %v",
+					conn.UniqueID, conn.HeartbeatFailCount, err)
+
+				// If failed twice, disconnect the device
+				if conn.HeartbeatFailCount >= 2 {
+					log.Printf("Heartbeat failed twice for %s, disconnecting device", conn.UniqueID)
+					s.connHandler.UnregisterDevice(conn.ClientID, conn.DeviceID)
+					return
+				}
+			} else {
+				// Reset fail count on successful heartbeat
+				conn.HeartbeatFailCount = 0
+				conn.LastHeartbeatAt = time.Now()
+				log.Printf("Heartbeat sent to %s", conn.UniqueID)
+			}
+
+		case <-done:
+			log.Printf("Stopping heartbeat for %s", conn.UniqueID)
+			return
+		}
+	}
 }
