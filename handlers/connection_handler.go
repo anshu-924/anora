@@ -185,6 +185,34 @@ func (h *ConnectionHandler) SendToSingleDevice(notification *models.Notification
 	return nil
 }
 
+// SendToLeastLoadedDevice sends notification to the device with least notification count for load balancing
+func (h *ConnectionHandler) SendToDeviceWithLeastNotification(notification *models.NotificationData) error {
+	clientGroup, exists := h.connManager.GetClientGroup(notification.ClientID)
+	if !exists {
+		return fmt.Errorf("no devices found for client: %s", notification.ClientID)
+	}
+
+	// Get the device with the least notification count (already filters for active streams)
+	targetDevice, ok := clientGroup.GetDeviceWithLeastNotifications()
+	if !ok {
+		return fmt.Errorf("no active devices found for client: %s", notification.ClientID)
+	}
+
+	// Send notification to the target device
+	if err := targetDevice.Stream.Send(notification.ToProto(targetDevice.UniqueID)); err != nil {
+		log.Printf("Failed to send notification to device %s: %v", targetDevice.UniqueID, err)
+		return fmt.Errorf("failed to send notification to device %s: %w", targetDevice.UniqueID, err)
+	}
+
+	// Update device metadata
+	targetDevice.LastNotificationAt = time.Now()
+	targetDevice.NotificationCount++
+	log.Printf("Notification sent successfully to device %s (total notifications: %d)",
+		targetDevice.UniqueID, targetDevice.NotificationCount)
+
+	return nil
+}
+
 // SendToFirstDevice sends notification to the first active device of a client
 func (h *ConnectionHandler) SendToFirstDevice(notification *models.NotificationData) error {
 	clientGroup, exists := h.connManager.GetClientGroup(notification.ClientID)

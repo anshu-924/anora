@@ -96,7 +96,8 @@ func setupHTTPGateway(server *services.Server, port string) {
 		}
 		//change here to send to all devices of the client instead of only first device
 		// err := notifServer.SendNotificationToClient(notification)
-		err := notifServer.GetConnectionHandler().SendToFirstDevice(notification)
+		// err := notifServer.GetConnectionHandler().SendToFirstDevice(notification)
+		err := notifServer.GetConnectionHandler().SendToDeviceWithLeastNotification(notification)  // currently sending to device with least notification count.
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})

@@ -70,6 +70,25 @@ func (cg *ClientGroup) GetDevice(deviceID string) (*Connection, bool) {
 	return conn, exists
 }
 
+// GetDeviceWithLeastNotifications returns the device with the least notification count that has an active stream
+func (cg *ClientGroup) GetDeviceWithLeastNotifications() (*Connection, bool) {
+	cg.mu.RLock()
+	defer cg.mu.RUnlock()
+	var selectedConn *Connection
+	for _, conn := range cg.Devices {
+		// Only consider devices with active streams
+		if conn.Stream != nil && conn.IsActive {
+			if selectedConn == nil || conn.NotificationCount < selectedConn.NotificationCount {
+				selectedConn = conn
+			}
+		}
+	}
+	if selectedConn != nil {
+		return selectedConn, true
+	}
+	return nil, false
+}
+
 // GetAllDevices returns all device connections for this client
 func (cg *ClientGroup) GetAllDevices() []*Connection {
 	cg.mu.RLock()
