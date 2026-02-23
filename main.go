@@ -10,11 +10,26 @@ import (
 	"syscall"
 	"time"
 
+	"grpcon/middleware"
 	"grpcon/models"
 	"grpcon/services"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: .env file not found, using environment variables")
+	}
+
+	// Verify API key is loaded
+	if apiKey := os.Getenv("X_API_KEY"); apiKey != "" {
+		log.Printf("API key loaded successfully (length: %d)", len(apiKey))
+	} else {
+		log.Println("WARNING: X_API_KEY not found in environment!")
+	}
+
 	// Default ports
 	grpcPort := ":50051"
 	httpPort := ":8080"
@@ -65,7 +80,7 @@ func main() {
 func setupHTTPGateway(server *services.Server, port string) {
 	notifServer := server.GetNotificationServer()
 
-	http.HandleFunc("/send", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/send", middleware.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Only POST method allowed"})
@@ -97,7 +112,7 @@ func setupHTTPGateway(server *services.Server, port string) {
 		//change here to send to all devices of the client instead of only first device
 		// err := notifServer.SendNotificationToClient(notification)
 		// err := notifServer.GetConnectionHandler().SendToFirstDevice(notification)
-		err := notifServer.GetConnectionHandler().SendToDeviceWithLeastNotification(notification)  // currently sending to device with least notification count.
+		err := notifServer.GetConnectionHandler().SendToDeviceWithLeastNotification(notification) // currently sending to device with least notification count.
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
@@ -105,16 +120,16 @@ func setupHTTPGateway(server *services.Server, port string) {
 		}
 
 		json.NewEncoder(w).Encode(map[string]string{"status": "sent"})
-	})
+	}))
 
 	// Get connection stats endpoint
-	http.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/stats", middleware.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		stats := notifServer.GetConnectionStats()
 		json.NewEncoder(w).Encode(stats)
-	})
+	}))
 
 	// List all clients endpoint
-	http.HandleFunc("/clients", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/clients", middleware.AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		connHandler := notifServer.GetConnectionHandler()
 		clientIDs := connHandler.GetConnectionManager().GetAllClientIDs()
 
@@ -136,7 +151,7 @@ func setupHTTPGateway(server *services.Server, port string) {
 		}
 
 		json.NewEncoder(w).Encode(clientsInfo)
-	})
+	}))
 
 	log.Fatal(http.ListenAndServe(port, nil))
 }

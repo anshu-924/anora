@@ -320,6 +320,8 @@ import (
     "time"
 )
 
+send X-API-KEY with requests
+
 func setupHTTPGateway(notifServer *handlers.NotificationServer) {
     http.HandleFunc("/send", func(w http.ResponseWriter, r *http.Request) {
         var req struct {

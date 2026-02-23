@@ -12,6 +12,7 @@ services:
     environment:
       - GRPC_PORT=50051
       - HTTP_PORT=8080
+      - X_API_KEY=donotredeem!
     networks:
       - grpc-network
     restart: unless-stopped
